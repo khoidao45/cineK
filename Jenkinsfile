@@ -71,7 +71,10 @@ pipeline {
           string(credentialsId: 'CINEK_REDIS_PASSWORD',              variable: 'REDIS_PASSWORD'),
           string(credentialsId: 'CINEK_JWT_SECRET',                  variable: 'JWT_SECRET'),
           string(credentialsId: 'CINEK_APP_BASE_URL',                variable: 'APP_BASE_URL'),
-          string(credentialsId: 'CINEK_OAUTH2_REDIRECT_URI',         variable: 'OAUTH2_REDIRECT_URI')
+          string(credentialsId: 'CINEK_OAUTH2_REDIRECT_URI',         variable: 'OAUTH2_REDIRECT_URI'),
+          string(credentialsId: 'CINEK_SUPABASE_URL',                variable: 'SUPABASE_URL'),
+          string(credentialsId: 'CINEK_GOOGLE_CLIENT_ID',            variable: 'GOOGLE_CLIENT_ID'),
+          string(credentialsId: 'CINEK_GOOGLE_CLIENT_SECRET',        variable: 'GOOGLE_CLIENT_SECRET')
         ]) {
           sh '''
             cat > .env.deploy <<EOF
@@ -83,6 +86,9 @@ REDIS_PASSWORD=$REDIS_PASSWORD
 JWT_SECRET=$JWT_SECRET
 APP_BASE_URL=$APP_BASE_URL
 OAUTH2_REDIRECT_URI=$OAUTH2_REDIRECT_URI
+SUPABASE_STORAGE_BASE_URL=$SUPABASE_URL
+GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID
+GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET
 EOF
 
             ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$SSH_USER@$VM_HOST" "mkdir -p $DEPLOY_PATH"
