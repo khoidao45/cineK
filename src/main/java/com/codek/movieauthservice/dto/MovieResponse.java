@@ -19,5 +19,11 @@ public class MovieResponse {
     private int duration;
     private int releaseYear;
     private String posterUrl;
+    private String thumbnailUrl;
+    private String videoUrl;
+    private long views;
+    private double ratingAvg;
+    private long ratingCount;
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }

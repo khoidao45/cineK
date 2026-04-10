@@ -23,6 +23,7 @@ public class ReviewService {
     private final UserService userService;
     private final MovieService movieService;
 
+    @Transactional
     public ReviewResponse addReview(Long userId, ReviewRequest request) {
         if (reviewRepository.existsByUserIdAndMovieId(userId, request.getMovieId())) {
             throw new DuplicateReviewException("Bạn đã đánh giá phim này rồi!");
@@ -39,6 +40,7 @@ public class ReviewService {
                 .build();
 
         Review saved = reviewRepository.save(review);
+        movieService.refreshRatingStats(request.getMovieId());
         return reviewMapper.toResponse(saved);
     }
 

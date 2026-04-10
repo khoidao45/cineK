@@ -2,10 +2,14 @@ package com.codek.movieauthservice.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "movies",
         indexes = {
                 @Index(name = "idx_movies_genre", columnList = "genre"),
@@ -38,11 +42,33 @@ public class Movie {
     @Column(length = 500)
     private String posterUrl;
 
-    @Column(updatable = false)
+    @Column(length = 500)
+    private String thumbnailUrl;
+
+    @Column(length = 1000)
+    private String videoUrl;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private long views = 0L;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private double ratingAvg = 0D;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private long ratingCount = 0L;
+
+        @Column(nullable = false)
+        @Builder.Default
+        private boolean deleted = false;
+
+    @CreatedDate
+    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @PrePersist
-    protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
-    }
+    @LastModifiedDate
+    @Column(nullable = false)
+    private LocalDateTime updatedAt;
 }

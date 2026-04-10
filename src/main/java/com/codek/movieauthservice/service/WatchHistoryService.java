@@ -13,6 +13,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+
 @Service
 @RequiredArgsConstructor
 public class WatchHistoryService {
@@ -28,6 +30,8 @@ public class WatchHistoryService {
                 .findByUserIdAndMovieId(userId, request.getMovieId())
                 .orElse(null);
 
+        LocalDateTime previousLastWatchedAt = watchHistory != null ? watchHistory.getLastWatchedAt() : null;
+
         if (watchHistory != null) {
             watchHistory.setProgress(request.getProgress());
         } else {
@@ -41,6 +45,12 @@ public class WatchHistoryService {
         }
 
         WatchHistory saved = watchHistoryRepository.save(watchHistory);
+
+        // Count a view only when this user hasn't watched the same movie in the last 10 minutes.
+        if (previousLastWatchedAt == null || previousLastWatchedAt.isBefore(LocalDateTime.now().minusMinutes(10))) {
+            movieService.incrementViews(request.getMovieId());
+        }
+
         return watchHistoryMapper.toResponse(saved);
     }
 

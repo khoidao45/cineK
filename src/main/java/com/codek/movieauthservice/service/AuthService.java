@@ -8,6 +8,7 @@ import com.codek.movieauthservice.exception.AuthException;
 import com.codek.movieauthservice.security.CustomUserDetailsService;
 import com.codek.movieauthservice.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthService {
 
     private final UserService userService;
@@ -31,6 +33,7 @@ public class AuthService {
      * (no tokens — the user must verify their email before they can log in).
      */
     public AuthResponse register(RegisterRequest request) {
+        log.info("auth.register.attempt username={} email={}", request.getUsername(), request.getEmail());
         User newUser = userService.registerUser(request);
 
         // Fire-and-forget: @Async in EmailService so this never blocks the response
@@ -48,6 +51,7 @@ public class AuthService {
     // ── Login ─────────────────────────────────────────────────────────────────
 
     public AuthResponse login(AuthRequest request) {
+        log.info("auth.login.attempt username={}", request.getUsername());
         try {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
@@ -77,9 +81,11 @@ public class AuthService {
                     .build();
 
         } catch (BadCredentialsException e) {
+            log.warn("auth.login.failed username={} reason={}", request.getUsername(), e.getMessage());
             // Propagate DaoAuthenticationProvider's specific message (locked / unverified / wrong password)
             throw new AuthException(e.getMessage());
         } catch (AuthenticationException e) {
+            log.warn("auth.login.failed username={} reason={}", request.getUsername(), e.getMessage());
             throw new AuthException("Authentication failed: " + e.getMessage());
         }
     }
@@ -101,6 +107,7 @@ public class AuthService {
     }
 
     public AuthResponse refreshToken(String refreshToken) {
+        log.info("auth.refresh.attempt");
         if (!jwtTokenProvider.validateToken(refreshToken)) {
             throw new AuthException("Invalid refresh token!");
         }

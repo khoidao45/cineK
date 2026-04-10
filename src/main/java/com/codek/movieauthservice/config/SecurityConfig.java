@@ -7,9 +7,11 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -22,6 +24,7 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -30,6 +33,7 @@ public class SecurityConfig {
     private final OAuth2UserServiceImpl oAuth2UserService;
     private final OAuth2AuthenticationSuccessHandler oAuth2SuccessHandler;
     private final HttpCookieOAuth2AuthorizationRequestRepository cookieAuthRequestRepository;
+        private final ApiAuthenticationEntryPoint apiAuthenticationEntryPoint;
 
     @Bean
         public AuthenticationManager authenticationManager(DaoAuthenticationProvider daoAuthenticationProvider) {
@@ -61,8 +65,15 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
+                .formLogin(form -> form.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(exception -> exception
+                        .defaultAuthenticationEntryPointFor(
+                                apiAuthenticationEntryPoint,
+                                new AntPathRequestMatcher("/api/**")
+                        )
+                )
 
                 // Security response headers
                 .headers(headers -> headers
@@ -80,8 +91,9 @@ public class SecurityConfig {
                                 "/api/auth/login", "/api/auth/register",
                                 "/api/auth/refresh", "/api/auth/resend-verification").permitAll()
                         .requestMatchers(HttpMethod.GET,
-                                "/api/auth/validate-token", "/api/auth/validate",
-                                "/api/auth/verify-email").permitAll()
+                                "/api/auth/validate", "/api/auth/verify-email").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/validate-token").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
                         // Google OAuth2 redirect endpoints
                         .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
                         // User check endpoints
@@ -92,8 +104,6 @@ public class SecurityConfig {
 
                         // Movie public read
                         .requestMatchers(HttpMethod.GET, "/api/movies", "/api/movies/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/movies/search").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/movies/genre").permitAll()
                         // Review public read
                         .requestMatchers(HttpMethod.GET, "/api/movies/*/reviews").permitAll()
 

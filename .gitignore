@@ -34,3 +34,16 @@ build/
 
 # Local environment variables
 .env
+
+# Additional env files
+.env.*
+!.env.example
+
+# Frontend build and dependencies
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Logs and temporary local scripts
+*.log
+tmp-*.ps1

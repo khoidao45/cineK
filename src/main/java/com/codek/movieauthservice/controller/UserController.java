@@ -8,6 +8,7 @@ import com.codek.movieauthservice.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -70,6 +71,7 @@ public class UserController {
     }
 
     @PostMapping("/activate/{userId}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<String> activateAccount(@PathVariable Long userId) {
         userService.activateAccount(userId);
         return ResponseEntity.ok("Tai khoan da kich hoat!");

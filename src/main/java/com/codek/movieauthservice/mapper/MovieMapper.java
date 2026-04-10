@@ -17,7 +17,13 @@ public class MovieMapper {
                 .duration(movie.getDuration())
                 .releaseYear(movie.getReleaseYear())
                 .posterUrl(movie.getPosterUrl())
+                .thumbnailUrl(movie.getThumbnailUrl())
+                .videoUrl(movie.getVideoUrl())
+                .views(movie.getViews())
+                .ratingAvg(movie.getRatingAvg())
+                .ratingCount(movie.getRatingCount())
                 .createdAt(movie.getCreatedAt())
+                .updatedAt(movie.getUpdatedAt())
                 .build();
     }
 
@@ -29,6 +35,8 @@ public class MovieMapper {
                 .duration(request.getDuration())
                 .releaseYear(request.getReleaseYear())
                 .posterUrl(request.getPosterUrl())
+                .thumbnailUrl(request.getThumbnailUrl())
+                .videoUrl(request.getVideoUrl())
                 .build();
     }
 }
