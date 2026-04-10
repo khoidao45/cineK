@@ -8,6 +8,7 @@ import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/LoginPage";
 import { MovieDetailPage } from "./pages/MovieDetailPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
+import { OAuth2CallbackPage } from "./pages/OAuth2CallbackPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { RecommendationsPage } from "./pages/RecommendationsPage";
 import { RegisterPage } from "./pages/RegisterPage";
@@ -23,6 +24,7 @@ export default function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/verify-email" element={<VerifyEmailPage />} />
+          <Route path="/oauth2/callback" element={<OAuth2CallbackPage />} />
           <Route path="/movies/:id" element={<MovieDetailPage />} />
 
           <Route element={<ProtectedRoute />}>
