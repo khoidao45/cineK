@@ -10,10 +10,12 @@ pipeline {
     ACR_NAME         = 'goktacr'
     ACR_LOGIN_SERVER = 'goktacr.azurecr.io'
 
-    IMAGE_TAG    = "${env.BUILD_NUMBER}"
-    CINEK_IMAGE  = "${env.ACR_LOGIN_SERVER}/cinek-backend:${env.IMAGE_TAG}"
+    IMAGE_TAG      = "${env.BUILD_NUMBER}"
+    CINEK_IMAGE    = "${env.ACR_LOGIN_SERVER}/cinek-backend:${env.IMAGE_TAG}"
+    FRONTEND_IMAGE = "${env.ACR_LOGIN_SERVER}/cinek-frontend:${env.IMAGE_TAG}"
 
-    DEPLOY_PATH  = '/opt/cinek'
+    DEPLOY_PATH           = '/opt/cinek'
+    FRONTEND_API_BASE_URL = 'https://cinek.minhkhoidao.id.vn'
   }
 
   stages {
@@ -46,11 +48,15 @@ pipeline {
       }
     }
 
-    stage('Build + Push Docker Image') {
+    stage('Build + Push Docker Images') {
       steps {
         sh '''
           docker build -t "$CINEK_IMAGE" .
+          docker build -f frontend/Dockerfile -t "$FRONTEND_IMAGE" \
+            --build-arg VITE_API_BASE_URL="$FRONTEND_API_BASE_URL" frontend
+
           docker push "$CINEK_IMAGE"
+          docker push "$FRONTEND_IMAGE"
         '''
       }
     }
@@ -58,18 +64,19 @@ pipeline {
     stage('Deploy To Azure VM') {
       steps {
         withCredentials([
-          sshUserPrivateKey(credentialsId: 'AZURE_VM_SSH_KEY', keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER'),
-          string(credentialsId: 'AZURE_VM_HOST',           variable: 'VM_HOST'),
-          string(credentialsId: 'CINEK_POSTGRES_PASSWORD', variable: 'POSTGRES_PASSWORD'),
-          string(credentialsId: 'CINEK_NEO4J_PASSWORD',    variable: 'NEO4J_PASSWORD'),
-          string(credentialsId: 'CINEK_REDIS_PASSWORD',    variable: 'REDIS_PASSWORD'),
-          string(credentialsId: 'CINEK_JWT_SECRET',        variable: 'JWT_SECRET'),
-          string(credentialsId: 'CINEK_APP_BASE_URL',      variable: 'APP_BASE_URL'),
-          string(credentialsId: 'CINEK_OAUTH2_REDIRECT_URI', variable: 'OAUTH2_REDIRECT_URI')
+          sshUserPrivateKey(credentialsId: 'AZURE_VM_SSH_KEY',       keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER'),
+          string(credentialsId: 'AZURE_VM_HOST',                     variable: 'VM_HOST'),
+          string(credentialsId: 'CINEK_POSTGRES_PASSWORD',           variable: 'POSTGRES_PASSWORD'),
+          string(credentialsId: 'CINEK_NEO4J_PASSWORD',              variable: 'NEO4J_PASSWORD'),
+          string(credentialsId: 'CINEK_REDIS_PASSWORD',              variable: 'REDIS_PASSWORD'),
+          string(credentialsId: 'CINEK_JWT_SECRET',                  variable: 'JWT_SECRET'),
+          string(credentialsId: 'CINEK_APP_BASE_URL',                variable: 'APP_BASE_URL'),
+          string(credentialsId: 'CINEK_OAUTH2_REDIRECT_URI',         variable: 'OAUTH2_REDIRECT_URI')
         ]) {
           sh '''
             cat > .env.deploy <<EOF
 CINEK_IMAGE=$CINEK_IMAGE
+FRONTEND_IMAGE=$FRONTEND_IMAGE
 POSTGRES_PASSWORD=$POSTGRES_PASSWORD
 NEO4J_PASSWORD=$NEO4J_PASSWORD
 REDIS_PASSWORD=$REDIS_PASSWORD
@@ -82,8 +89,9 @@ EOF
             scp -i "$SSH_KEY" -o StrictHostKeyChecking=no docker-compose.prod.yml "$SSH_USER@$VM_HOST:$DEPLOY_PATH/docker-compose.prod.yml"
             scp -i "$SSH_KEY" -o StrictHostKeyChecking=no .env.deploy "$SSH_USER@$VM_HOST:$DEPLOY_PATH/.env"
 
-            ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$SSH_USER@$VM_HOST" \
-              "cd $DEPLOY_PATH && docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml up -d --remove-orphans && docker image prune -f"
+            ACR_TOKEN=$(az acr login --name "$ACR_NAME" --expose-token --output tsv --query accessToken)
+            echo "$ACR_TOKEN" | ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$SSH_USER@$VM_HOST" \
+              "docker login $ACR_LOGIN_SERVER -u 00000000-0000-0000-0000-000000000000 --password-stdin && cd $DEPLOY_PATH && docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml up -d --remove-orphans && docker image prune -f"
 
             rm -f .env.deploy
           '''
