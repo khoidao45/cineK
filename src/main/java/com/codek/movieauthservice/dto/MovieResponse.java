@@ -21,6 +21,8 @@ public class MovieResponse {
     private String posterUrl;
     private String thumbnailUrl;
     private String videoUrl;
+    private String director;
+    private String actors;
     private long views;
     private double ratingAvg;
     private long ratingCount;

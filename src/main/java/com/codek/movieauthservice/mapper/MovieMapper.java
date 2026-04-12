@@ -19,6 +19,8 @@ public class MovieMapper {
                 .posterUrl(movie.getPosterUrl())
                 .thumbnailUrl(movie.getThumbnailUrl())
                 .videoUrl(movie.getVideoUrl())
+                .director(movie.getDirector())
+                .actors(movie.getActors())
                 .views(movie.getViews())
                 .ratingAvg(movie.getRatingAvg())
                 .ratingCount(movie.getRatingCount())
@@ -37,6 +39,8 @@ public class MovieMapper {
                 .posterUrl(request.getPosterUrl())
                 .thumbnailUrl(request.getThumbnailUrl())
                 .videoUrl(request.getVideoUrl())
+                .director(request.getDirector())
+                .actors(request.getActors())
                 .build();
     }
 }

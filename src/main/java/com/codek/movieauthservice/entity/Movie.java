@@ -48,6 +48,12 @@ public class Movie {
     @Column(length = 1000)
     private String videoUrl;
 
+    @Column(length = 255)
+    private String director;
+
+    @Column(columnDefinition = "TEXT")
+    private String actors;
+
     @Column(nullable = false)
     @Builder.Default
     private long views = 0L;

@@ -36,4 +36,9 @@ public class MovieRequest {
 
     @Size(max = 1000, message = "videoUrl tối đa 1000 ký tự")
     private String videoUrl;
+
+    @Size(max = 255, message = "director tối đa 255 ký tự")
+    private String director;
+
+    private String actors;
 }

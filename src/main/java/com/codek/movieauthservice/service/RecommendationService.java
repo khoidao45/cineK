@@ -72,6 +72,8 @@ public class RecommendationService {
         Map<Long, Movie> movieById = candidateMovies.stream().collect(Collectors.toMap(Movie::getId, m -> m));
 
         Set<String> preferredGenres = derivePreferredGenres(watchedMovieIds);
+        Set<String> preferredActors = derivePreferredActors(watchedMovieIds);
+        Set<String> preferredDirectors = derivePreferredDirectors(watchedMovieIds);
         Map<Long, Long> recentCountByMovieId = watchHistoryRepository
                 .findRecentWatchCountsForMovieIds(candidateMovieIds, LocalDateTime.now().minusDays(7))
                 .stream()
@@ -91,12 +93,15 @@ public class RecommendationService {
 
                     double similarityScore = weightedSimilarityByMovieId.getOrDefault(movieId, 0D) / Math.max(maxSimilarity, 1D);
                     double genreScore = preferredGenres.contains(normalizeGenre(movie.getGenre())) ? 1D : 0D;
+                    double actorScore = computeActorScore(movie.getActors(), preferredActors);
+                    double directorScore = preferredDirectors.contains(normalizeName(movie.getDirector())) ? 1D : 0D;
+                    double contentScore = (actorScore * 0.6) + (directorScore * 0.4);
                     double viewsNormalized = movie.getViews() / Math.max(maxViews, 1D);
                     double recentNormalized = recentCountByMovieId.getOrDefault(movieId, 0L) / Math.max(maxRecent, 1D);
                     double trendingScore = viewsNormalized * 0.7 + recentNormalized * 0.3;
                     double ratingBoost = Math.min(movie.getRatingAvg() / 5D, 1D) * 0.1;
 
-                    double totalScore = (similarityScore * 0.5) + (genreScore * 0.3) + (trendingScore * 0.2) + ratingBoost;
+                    double totalScore = (similarityScore * 0.4) + (genreScore * 0.25) + (contentScore * 0.25) + (trendingScore * 0.1) + ratingBoost;
                     MovieResponse movieResponse = movieMapper.toResponse(movie);
 
                     return RecommendationResponse.builder()
@@ -159,5 +164,52 @@ public class RecommendationService {
 
     private String normalizeGenre(String genre) {
         return genre == null ? "" : genre.trim().toLowerCase();
+    }
+
+    private String normalizeName(String name) {
+        return name == null ? "" : name.trim().toLowerCase();
+    }
+
+    private Set<String> derivePreferredActors(List<Long> watchedMovieIds) {
+        if (watchedMovieIds == null || watchedMovieIds.isEmpty()) {
+            return Set.of();
+        }
+        return movieRepository.findAllByIdInAndDeletedFalse(watchedMovieIds).stream()
+                .filter(m -> m.getActors() != null && !m.getActors().isBlank())
+                .flatMap(m -> java.util.Arrays.stream(m.getActors().split(",")))
+                .map(a -> a.trim().toLowerCase())
+                .filter(a -> !a.isEmpty())
+                .collect(Collectors.groupingBy(a -> a, Collectors.counting()))
+                .entrySet().stream()
+                .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+                .limit(5)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toSet());
+    }
+
+    private Set<String> derivePreferredDirectors(List<Long> watchedMovieIds) {
+        if (watchedMovieIds == null || watchedMovieIds.isEmpty()) {
+            return Set.of();
+        }
+        return movieRepository.findAllByIdInAndDeletedFalse(watchedMovieIds).stream()
+                .filter(m -> m.getDirector() != null && !m.getDirector().isBlank())
+                .map(m -> m.getDirector().trim().toLowerCase())
+                .collect(Collectors.groupingBy(d -> d, Collectors.counting()))
+                .entrySet().stream()
+                .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+                .limit(3)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toSet());
+    }
+
+    private double computeActorScore(String actorsField, Set<String> preferredActors) {
+        if (actorsField == null || actorsField.isBlank() || preferredActors.isEmpty()) {
+            return 0D;
+        }
+        long matches = java.util.Arrays.stream(actorsField.split(","))
+                .map(a -> a.trim().toLowerCase())
+                .filter(preferredActors::contains)
+                .count();
+        return Math.min(matches / 2D, 1D);
     }
 }
