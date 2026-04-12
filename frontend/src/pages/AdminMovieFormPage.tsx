@@ -14,6 +14,8 @@ const emptyForm = {
   posterUrl: "",
   thumbnailUrl: "",
   videoUrl: "",
+  director: "",
+  actors: "",
 };
 
 export function AdminMovieFormPage() {
@@ -36,6 +38,8 @@ export function AdminMovieFormPage() {
         posterUrl: res.data.posterUrl || "",
         thumbnailUrl: res.data.thumbnailUrl || "",
         videoUrl: res.data.videoUrl || "",
+        director: res.data.director || "",
+        actors: res.data.actors || "",
       }))
       .catch((e) => setError(parseError(e)));
   }, [id, isEdit, parseError]);
@@ -67,6 +71,8 @@ export function AdminMovieFormPage() {
         <input className="input" placeholder="Poster URL" value={form.posterUrl} onChange={(e) => setForm({ ...form, posterUrl: e.target.value })} />
         <input className="input" placeholder="Thumbnail URL" value={form.thumbnailUrl} onChange={(e) => setForm({ ...form, thumbnailUrl: e.target.value })} />
         <input className="input" placeholder="Video URL" value={form.videoUrl} onChange={(e) => setForm({ ...form, videoUrl: e.target.value })} />
+        <input className="input" placeholder="Director" value={form.director} onChange={(e) => setForm({ ...form, director: e.target.value })} />
+        <input className="input" placeholder="Actors (comma separated)" value={form.actors} onChange={(e) => setForm({ ...form, actors: e.target.value })} />
         <button className="btn" type="submit">Save</button>
         <ErrorNotice message={error} />
       </form>
