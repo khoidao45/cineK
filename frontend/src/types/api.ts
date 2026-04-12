@@ -29,6 +29,8 @@ export interface MovieResponse {
   posterUrl?: string;
   thumbnailUrl?: string;
   videoUrl?: string;
+  director?: string;
+  actors?: string;
   views: number;
   ratingAvg: number;
   ratingCount: number;
