@@ -34,7 +34,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
         String path = request.getRequestURI();
 
-        if (path.startsWith("/api/auth/")) {
+        if (path.equals("/api/auth/login") || path.equals("/api/auth/register")) {
             String ip = request.getRemoteAddr();
 
             if (!rateLimitService.tryConsume(ip)) {
