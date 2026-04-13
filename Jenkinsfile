@@ -74,7 +74,9 @@ pipeline {
           string(credentialsId: 'CINEK_OAUTH2_REDIRECT_URI',         variable: 'OAUTH2_REDIRECT_URI'),
           string(credentialsId: 'CINEK_SUPABASE_URL',                variable: 'SUPABASE_URL'),
           string(credentialsId: 'CINEK_GOOGLE_CLIENT_ID',            variable: 'GOOGLE_CLIENT_ID'),
-          string(credentialsId: 'CINEK_GOOGLE_CLIENT_SECRET',        variable: 'GOOGLE_CLIENT_SECRET')
+          string(credentialsId: 'CINEK_GOOGLE_CLIENT_SECRET',        variable: 'GOOGLE_CLIENT_SECRET'),
+          string(credentialsId: 'CINEK_SENDGRID_API_KEY',            variable: 'SENDGRID_API_KEY'),
+          string(credentialsId: 'CINEK_SENDGRID_FROM_EMAIL',         variable: 'SENDGRID_FROM_EMAIL')
         ]) {
           sh '''
             cat > .env.deploy <<EOF
@@ -89,6 +91,8 @@ OAUTH2_REDIRECT_URI=$OAUTH2_REDIRECT_URI
 SUPABASE_STORAGE_BASE_URL=$SUPABASE_URL
 GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID
 GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET
+SENDGRID_API_KEY=$SENDGRID_API_KEY
+SENDGRID_FROM_EMAIL=$SENDGRID_FROM_EMAIL
 EOF
 
             ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$SSH_USER@$VM_HOST" "mkdir -p $DEPLOY_PATH"
