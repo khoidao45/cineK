@@ -38,10 +38,12 @@ public class CookieUtils {
         Arrays.stream(request.getCookies())
                 .filter(c -> c.getName().equals(name))
                 .forEach(c -> {
-                    c.setValue("");
-                    c.setPath("/");
-                    c.setMaxAge(0);
-                    response.addCookie(c);
+                    // Create a new Cookie instead of mutating c in-place;
+                    // mutating c would corrupt subsequent getCookie() calls on the same request
+                    Cookie expired = new Cookie(name, "");
+                    expired.setPath("/");
+                    expired.setMaxAge(0);
+                    response.addCookie(expired);
                 });
     }
 
@@ -49,14 +51,18 @@ public class CookieUtils {
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
              ObjectOutputStream oos = new ObjectOutputStream(baos)) {
             oos.writeObject(object);
-            return Base64.getUrlEncoder().encodeToString(baos.toByteArray());
+            // withoutPadding() avoids '=' chars in cookie value which confuse nginx/browsers
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(baos.toByteArray());
         } catch (IOException e) {
             throw new IllegalStateException("Failed to serialize cookie value", e);
         }
     }
 
     public static <T> T deserialize(Cookie cookie, Class<T> cls) {
-        byte[] bytes = Base64.getUrlDecoder().decode(cookie.getValue());
+        String value = cookie.getValue();
+        if (value == null || value.isEmpty()) return null;
+        byte[] bytes = Base64.getUrlDecoder().decode(value);
+        if (bytes.length == 0) return null;
         try (ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(bytes))) {
             return cls.cast(ois.readObject());
         } catch (IOException | ClassNotFoundException e) {

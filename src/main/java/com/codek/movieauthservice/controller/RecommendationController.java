@@ -14,7 +14,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/recommendations")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*", maxAge = 3600)
 public class RecommendationController {
 
     private final RecommendationService recommendationService;

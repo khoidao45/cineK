@@ -17,7 +17,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/movies")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*", maxAge = 3600)
 public class MovieController {
 
     private final MovieService movieService;

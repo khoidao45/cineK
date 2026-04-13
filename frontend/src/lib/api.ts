@@ -68,16 +68,18 @@ api.interceptors.response.use(
 
         const newAccess = refreshRes.data.token;
         const newRefresh = refreshRes.data.refreshToken || refreshToken;
+        const newUserId = refreshRes.data.userId ?? userId;
+        const newRole = refreshRes.data.role ?? role;
 
-        if (!newAccess || !userId || !role) {
+        if (!newAccess || !newUserId || !newRole) {
           throw new Error("Invalid refresh response");
         }
 
         setSession({
           token: newAccess,
           refreshToken: newRefresh,
-          userId,
-          role,
+          userId: newUserId,
+          role: newRole,
         });
 
         flushQueue(newAccess);

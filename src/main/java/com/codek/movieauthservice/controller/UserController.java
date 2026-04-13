@@ -8,6 +8,7 @@ import com.codek.movieauthservice.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -15,7 +16,6 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*", maxAge = 3600)
 public class UserController {
 
     private final UserService userService;
@@ -45,7 +45,7 @@ public class UserController {
     @PutMapping("/profile")
     public ResponseEntity<UserResponse> updateProfile(
             @AuthenticationPrincipal CustomUserDetailsService.CustomUserDetails userDetails,
-            @RequestBody UpdateProfileRequest request) {
+            @Valid @RequestBody UpdateProfileRequest request) {
         return ResponseEntity.ok(
                 userService.convertToUserResponse(
                         userService.updateProfile(userDetails.getUserId(), request)));
@@ -54,13 +54,13 @@ public class UserController {
     @PostMapping("/change-password")
     public ResponseEntity<String> changePassword(
             @AuthenticationPrincipal CustomUserDetailsService.CustomUserDetails userDetails,
-            @RequestBody ChangePasswordRequest request) {
+            @Valid @RequestBody ChangePasswordRequest request) {
         if (!request.getNewPassword().equals(request.getConfirmPassword())) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("Mat khau xac nhan khong khop!");
+                    .body("Mật khẩu xác nhận không khớp");
         }
         userService.changePassword(userDetails.getUserId(), request.getOldPassword(), request.getNewPassword());
-        return ResponseEntity.ok("Doi mat khau thanh cong!");
+        return ResponseEntity.ok("Đổi mật khẩu thành công");
     }
 
     @PostMapping("/deactivate")

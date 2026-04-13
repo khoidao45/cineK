@@ -12,7 +12,6 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 @RestController
 @RequestMapping("/api/videos")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*", maxAge = 3600)
 public class VideoController {
 
     private final VideoStreamingService videoStreamingService;

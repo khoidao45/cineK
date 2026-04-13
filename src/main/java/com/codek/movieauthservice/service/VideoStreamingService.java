@@ -215,7 +215,7 @@ public class VideoStreamingService {
     private Path resolveLocalPath(String videoPathValue) {
         Path source = Paths.get(videoPathValue);
         if (source.isAbsolute()) {
-            return source;
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Đường dẫn video không hợp lệ");
         }
         Path root = Paths.get(videoLocalRoot).toAbsolutePath().normalize();
         Path resolved = root.resolve(videoPathValue).normalize();

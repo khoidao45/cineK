@@ -25,6 +25,7 @@ export default function App() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/verify-email" element={<VerifyEmailPage />} />
           <Route path="/oauth2/callback" element={<OAuth2CallbackPage />} />
+          <Route path="/oauth2/redirect" element={<OAuth2CallbackPage />} />
           <Route path="/movies/:id" element={<MovieDetailPage />} />
 
           <Route element={<ProtectedRoute />}>

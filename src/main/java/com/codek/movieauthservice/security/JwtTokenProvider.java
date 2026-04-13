@@ -17,7 +17,7 @@ import java.util.Map;
 @Component
 public class JwtTokenProvider {
 
-    @Value("${app.jwtSecret:mySecretKeyForMovieAuthServiceThatIsAtLeast256BitsLong1234567890}")
+    @Value("${app.jwtSecret}")
     private String jwtSecret;
 
     @Value("${app.jwtExpirationMs:86400000}")
@@ -63,11 +63,15 @@ public class JwtTokenProvider {
     }
 
     public String getRoleFromToken(String token) {
-        return (String) getClaimsFromToken(token).get("role");
+        Object role = getClaimsFromToken(token).get("role");
+        if (role == null) throw new InvalidTokenException("Token thiếu thông tin role");
+        return (String) role;
     }
 
     public Long getUserIdFromToken(String token) {
-        return ((Number) getClaimsFromToken(token).get("userId")).longValue();
+        Object userId = getClaimsFromToken(token).get("userId");
+        if (userId == null) throw new InvalidTokenException("Token thiếu thông tin userId");
+        return ((Number) userId).longValue();
     }
 
     public boolean isAccessToken(String token) {
