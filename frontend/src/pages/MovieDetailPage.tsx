@@ -6,6 +6,8 @@ import { useAuthStore } from "../store/auth";
 import { useErrorMessage } from "../hooks/useErrorMessage";
 import { ErrorNotice } from "../components/ErrorNotice";
 
+const GRADIENTS = ["pg-1","pg-2","pg-3","pg-4","pg-5","pg-6","pg-7","pg-8"];
+
 export function MovieDetailPage() {
   const { id } = useParams();
   const movieId = Number(id);
@@ -31,9 +33,7 @@ export function MovieDetailPage() {
     }
   };
 
-  useEffect(() => {
-    void load();
-  }, [id]);
+  useEffect(() => { void load(); }, [id]);
 
   const submitReview = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,34 +47,75 @@ export function MovieDetailPage() {
     }
   };
 
-  if (!movie) return <section>Loading movie...</section>;
+  if (!movie) return <section style={{padding:"2rem", color:"var(--muted)"}}>Loading...</section>;
+
+  const pg = GRADIENTS[movieId % GRADIENTS.length];
 
   return (
     <section>
-      <h1>{movie.title}</h1>
-      <p>{movie.description || "No description"}</p>
-      <p>{movie.genre} · {movie.releaseYear} · {movie.duration}m</p>
-      <p>Views {movie.views} · Rating {movie.ratingAvg.toFixed(1)} ({movie.ratingCount})</p>
-      {authed && <Link className="btn" to={`/watch/${movie.id}`}>Watch now</Link>}
       <ErrorNotice message={error} />
 
-      <h2 className="section-title">Reviews</h2>
-      <div className="grid cards">
+      <div className="detail-hero">
+        <div className="detail-poster">
+          {movie.posterUrl
+            ? <img src={movie.posterUrl} alt={movie.title} />
+            : <div className={`detail-poster-placeholder ${pg}`} style={{width:"100%",height:"100%"}} />}
+        </div>
+        <div className="detail-info">
+          <h1 className="detail-title">{movie.title}</h1>
+          <div className="detail-tags">
+            <span className="tag">{movie.genre}</span>
+            <span className="tag">{movie.releaseYear}</span>
+            <span className="tag">{movie.duration}m</span>
+            {movie.director && <span className="tag">Dir. {movie.director}</span>}
+          </div>
+          <div style={{display:"flex", alignItems:"center", gap:8}}>
+            <span className="rating-big">★ {movie.ratingAvg.toFixed(1)}</span>
+            <span style={{color:"var(--muted)", fontSize:13}}>({movie.ratingCount} reviews)</span>
+            <span style={{color:"var(--muted)", fontSize:13}}>· {movie.views} views</span>
+          </div>
+          {movie.description && <p className="detail-desc">{movie.description}</p>}
+          {movie.actors && (
+            <p style={{fontSize:13, color:"var(--muted)"}}>
+              <strong style={{color:"var(--text)"}}>Cast:</strong> {movie.actors}
+            </p>
+          )}
+          {authed && (
+            <div style={{marginTop:"0.5rem"}}>
+              <Link className="btn" to={`/watch/${movie.id}`} style={{display:"inline-flex", gap:8}}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M5 3l14 9-14 9V3z"/></svg>
+                Watch Now
+              </Link>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <h2 className="section-title">Reviews <span>({reviews.length})</span></h2>
+      <div className="grid cards" style={{marginBottom:"1rem"}}>
         {reviews.map((r) => (
-          <article className="movie-card" key={r.id}>
-            <strong>{r.username}</strong>
-            <span>Rating {r.rating}/5</span>
-            <span>{r.comment || "No comment"}</span>
+          <article className="card" key={r.id} style={{margin:0}}>
+            <div style={{display:"flex", justifyContent:"space-between", marginBottom:4}}>
+              <strong style={{fontSize:13}}>{r.username}</strong>
+              <span style={{color:"var(--gold)", fontSize:13}}>{"★".repeat(r.rating)}{"☆".repeat(5-r.rating)}</span>
+            </div>
+            <p style={{color:"var(--muted)", fontSize:13}}>{r.comment || "No comment"}</p>
           </article>
         ))}
       </div>
 
       {authed && (
         <form className="card form" onSubmit={submitReview}>
-          <h3>Write a review</h3>
-          <input className="input" type="number" min={1} max={5} value={rating} onChange={(e) => setRating(Number(e.target.value))} />
-          <textarea className="input" value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Your comment" />
-          <button className="btn" type="submit">Submit</button>
+          <h3 style={{fontSize:15, fontWeight:600}}>Write a Review</h3>
+          <div style={{display:"flex", gap:8, alignItems:"center"}}>
+            <label style={{color:"var(--muted)", fontSize:13}}>Rating:</label>
+            <input className="input" type="number" min={1} max={5} value={rating}
+              onChange={(e) => setRating(Number(e.target.value))}
+              style={{width:80}} />
+            <span style={{color:"var(--gold)"}}>{"★".repeat(rating)}{"☆".repeat(5-rating)}</span>
+          </div>
+          <textarea className="input" value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Your comment..." />
+          <button className="btn" type="submit">Submit Review</button>
         </form>
       )}
     </section>
