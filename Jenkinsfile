@@ -6,6 +6,10 @@ pipeline {
     disableConcurrentBuilds()
   }
 
+  triggers {
+    githubPush()
+  }
+
   environment {
     ACR_NAME         = 'goktacr'
     ACR_LOGIN_SERVER = 'goktacr.azurecr.io'
