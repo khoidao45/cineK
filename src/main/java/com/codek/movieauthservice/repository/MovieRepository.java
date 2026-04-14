@@ -16,6 +16,7 @@ import java.util.Optional;
 public interface MovieRepository extends JpaRepository<Movie, Long> {
         Page<Movie> findByTitleContainingIgnoreCaseAndDeletedFalse(String title, Pageable pageable);
         Page<Movie> findByGenreIgnoreCaseAndDeletedFalse(String genre, Pageable pageable);
+    boolean existsByTitleIgnoreCase(String title);
         Optional<Movie> findByIdAndDeletedFalse(Long id);
         boolean existsByIdAndDeletedFalse(Long id);
         List<Movie> findAllByDeletedFalse();

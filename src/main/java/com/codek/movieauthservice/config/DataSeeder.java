@@ -80,12 +80,7 @@ public class DataSeeder implements ApplicationRunner {
     // ── Movies ────────────────────────────────────────────────────────────────
 
     private void seedMovies() {
-        if (movieRepository.count() > 0) {
-            log.info("seed.movies.skip — already exist");
-            return;
-        }
-
-        List<Movie> movies = List.of(
+        List<Movie> seedCatalog = List.of(
             movie("Inception",
                 "Một tên trộm có khả năng xâm nhập vào giấc mơ của người khác bị giao nhiệm vụ cấy ghép một ý tưởng.",
                 "Sci-Fi", 148, 2010,
@@ -177,8 +172,17 @@ public class DataSeeder implements ApplicationRunner {
                 "Todd Phillips", "Joaquin Phoenix, Robert De Niro, Zazie Beetz")
         );
 
-        movieRepository.saveAll(movies);
-        log.info("seed.movies.done — created {} movies", movies.size());
+        List<Movie> missingMovies = seedCatalog.stream()
+                .filter(movie -> !movieRepository.existsByTitleIgnoreCase(movie.getTitle()))
+                .toList();
+
+        if (missingMovies.isEmpty()) {
+            log.info("seed.movies.skip — seed catalog already present");
+            return;
+        }
+
+        movieRepository.saveAll(missingMovies);
+        log.info("seed.movies.done — created {} missing movies", missingMovies.size());
     }
 
     private Movie movie(String title, String description, String genre,

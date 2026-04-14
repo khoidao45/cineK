@@ -10,6 +10,7 @@ import com.codek.movieauthservice.repository.MovieRepository;
 import com.codek.movieauthservice.repository.WatchHistoryRepository;
 import com.codek.movieauthservice.repository.neo4j.MovieNodeRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class RecommendationService {
 
     private final WatchHistoryRepository watchHistoryRepository;
@@ -35,7 +37,17 @@ public class RecommendationService {
     @Transactional(readOnly = true)
     public List<RecommendationResponse> getRecommendations(Long userId, int limit) {
         int safeLimit = Math.min(Math.max(limit, 1), appProperties.recommendationLimit());
+        List<Long> watchedMovieIds = watchHistoryRepository.findWatchedMovieIdsByUserId(userId);
 
+        try {
+            return getGraphRecommendations(userId, safeLimit, watchedMovieIds);
+        } catch (Exception ex) {
+            log.error("recommendation.graph.failed userId={} -> fallback to SQL cold-start", userId, ex);
+            return buildColdStartRecommendations(watchedMovieIds, safeLimit);
+        }
+    }
+
+    private List<RecommendationResponse> getGraphRecommendations(Long userId, int safeLimit, List<Long> watchedMovieIds) {
         List<MovieNode> collaborative = movieNodeRepository
                 .findCollaborativeRecommendations(userId, safeLimit * 2);
         List<MovieNode> contentBased = movieNodeRepository
@@ -46,7 +58,7 @@ public class RecommendationService {
                 .findColdStartRecommendations(userId, safeLimit * 2);
 
         if (collaborative.isEmpty() && contentBased.isEmpty() && trending.isEmpty() && coldStart.isEmpty()) {
-            return buildColdStartRecommendations(watchHistoryRepository.findWatchedMovieIdsByUserId(userId), safeLimit);
+            return buildColdStartRecommendations(watchedMovieIds, safeLimit);
         }
 
         Map<Long, Double> similarityScores = rankToScore(collaborative, 1.0);
