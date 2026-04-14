@@ -103,9 +103,56 @@ EOF
             scp -i "$SSH_KEY" -o StrictHostKeyChecking=no docker-compose.prod.yml "$SSH_USER@$VM_HOST:$DEPLOY_PATH/docker-compose.prod.yml"
             scp -i "$SSH_KEY" -o StrictHostKeyChecking=no .env.deploy "$SSH_USER@$VM_HOST:$DEPLOY_PATH/.env"
 
+            # Avoid leaking registry tokens to Jenkins logs
+            set +x
             ACR_TOKEN=$(az acr login --name "$ACR_NAME" --expose-token --output tsv --query accessToken)
             echo "$ACR_TOKEN" | ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$SSH_USER@$VM_HOST" \
-              "docker login $ACR_LOGIN_SERVER -u 00000000-0000-0000-0000-000000000000 --password-stdin && cd $DEPLOY_PATH && docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml up -d --remove-orphans && docker image prune -f"
+              "docker login $ACR_LOGIN_SERVER -u 00000000-0000-0000-0000-000000000000 --password-stdin"
+            set -x
+
+            ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$SSH_USER@$VM_HOST" '
+              set -e
+              cd '"$DEPLOY_PATH"'
+              docker compose -f docker-compose.prod.yml pull
+              docker compose -f docker-compose.prod.yml up -d --remove-orphans
+
+              BACKEND_ID=$(docker compose -f docker-compose.prod.yml ps -q backend)
+              if [ -z "$BACKEND_ID" ]; then
+                echo "Backend container was not created"
+                docker compose -f docker-compose.prod.yml ps
+                docker compose -f docker-compose.prod.yml logs --tail=200 backend || true
+                exit 1
+              fi
+
+              # Wait for backend to become healthy; if not, print diagnostics.
+              ATTEMPT=0
+              MAX_ATTEMPTS=18
+              while [ "$ATTEMPT" -lt "$MAX_ATTEMPTS" ]; do
+                STATUS=$(docker inspect --format="{{.State.Status}}" "$BACKEND_ID")
+                HEALTH=$(docker inspect --format="{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}" "$BACKEND_ID")
+                echo "backend status=$STATUS health=$HEALTH (attempt $((ATTEMPT + 1))/$MAX_ATTEMPTS)"
+
+                if [ "$STATUS" = "running" ] && [ "$HEALTH" = "healthy" ]; then
+                  docker image prune -f
+                  exit 0
+                fi
+
+                if [ "$STATUS" = "exited" ] || [ "$HEALTH" = "unhealthy" ]; then
+                  echo "Backend failed to become healthy"
+                  docker compose -f docker-compose.prod.yml ps
+                  docker compose -f docker-compose.prod.yml logs --tail=300 backend || true
+                  exit 1
+                fi
+
+                ATTEMPT=$((ATTEMPT + 1))
+                sleep 5
+              done
+
+              echo "Backend health check timed out"
+              docker compose -f docker-compose.prod.yml ps
+              docker compose -f docker-compose.prod.yml logs --tail=300 backend || true
+              exit 1
+            '
 
             rm -f .env.deploy
           '''
