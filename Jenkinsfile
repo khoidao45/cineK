@@ -114,7 +114,9 @@ EOF
               set -e
               cd '"$DEPLOY_PATH"'
               docker compose -f docker-compose.prod.yml pull
-              docker compose -f docker-compose.prod.yml up -d --remove-orphans
+
+              # Start data services + backend first so we can diagnose backend health clearly.
+              docker compose -f docker-compose.prod.yml up -d postgres neo4j redis backend
 
               BACKEND_ID=$(docker compose -f docker-compose.prod.yml ps -q backend)
               if [ -z "$BACKEND_ID" ]; then
@@ -133,6 +135,8 @@ EOF
                 echo "backend status=$STATUS health=$HEALTH (attempt $((ATTEMPT + 1))/$MAX_ATTEMPTS)"
 
                 if [ "$STATUS" = "running" ] && [ "$HEALTH" = "healthy" ]; then
+                  # Backend is healthy, then start frontend.
+                  docker compose -f docker-compose.prod.yml up -d frontend
                   docker image prune -f
                   exit 0
                 fi
