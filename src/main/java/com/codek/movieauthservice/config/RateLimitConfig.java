@@ -10,6 +10,7 @@ import io.lettuce.core.codec.ByteArrayCodec;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
 import java.time.Duration;
 
@@ -20,6 +21,7 @@ import java.time.Duration;
  * Redis connection so the two don't interfere with each other's serialization.
  */
 @Configuration
+@Profile("!test")
 public class RateLimitConfig {
 
     @Value("${spring.data.redis.host:localhost}")

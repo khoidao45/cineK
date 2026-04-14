@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CineMax</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  :root {
+    --bg: #0a0a0f;
+    --bg2: #111118;
+    --bg3: #1a1a24;
+    --card: #16161f;
+    --border: rgba(255,255,255,0.07);
+    --text: #f0eee8;
+    --muted: #7a7890;
+    --accent: #e63946;
+    --accent2: #ff6b35;
+    --gold: #f4c542;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+
+  /* ── NAVBAR ───────────────────────────────────────── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; gap: 2rem;
+    padding: 0 3rem;
+    height: 64px;
+    background: linear-gradient(to bottom, rgba(10,10,15,0.98), transparent);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+  }
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    text-shadow: 0 0 40px rgba(230,57,70,0.5);
+    user-select: none;
+  }
+  .nav-links { display: flex; gap: 1.5rem; flex: 1; }
+  .nav-links a {
+    color: var(--muted); font-size: 14px; font-weight: 500;
+    text-decoration: none; cursor: pointer; transition: color .2s;
+  }
+  .nav-links a:hover, .nav-links a.active { color: var(--text); }
+  .nav-right { display: flex; align-items: center; gap: 12px; margin-left: auto; }
+
+  .search-bar {
+    display: flex; align-items: center; gap: 8px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 6px; padding: 6px 12px;
+    transition: border-color .2s;
+  }
+  .search-bar:focus-within { border-color: rgba(255,255,255,0.2); }
+  .search-bar input {
+    background: none; border: none; outline: none;
+    color: var(--text); font-size: 13px; width: 180px;
+  }
+  .search-bar input::placeholder { color: var(--muted); }
+
+  .btn-login {
+    background: var(--accent); color: white; border: none;
+    padding: 8px 20px; border-radius: 6px;
+    font-weight: 600; font-size: 13px; cursor: pointer;
+    transition: background .2s, transform .1s;
+  }
+  .btn-login:hover { background: #c1121f; transform: translateY(-1px); }
+
+  /* ── HERO ─────────────────────────────────────────── */
+  .hero {
+    position: relative; height: 100vh;
+    display: flex; align-items: flex-end;
+    padding: 0 4rem 6rem;
+    overflow: hidden;
+  }
+  .hero-bg {
+    position: absolute; inset: 0;
+    background: linear-gradient(
+      135deg,
+      #0a0a0f 0%,
+      #1a0a1f 30%,
+      #0f1528 70%,
+      #0a0a0f 100%
+    );
+  }
+  .hero-glow {
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 70% 60% at 60% 40%,
+      rgba(230,57,70,0.15) 0%, transparent 70%);
+  }
+  .hero-grid {
+    position: absolute; inset: 0; opacity: 0.03;
+    background-image:
+      linear-gradient(rgba(255,255,255,.5) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.5) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+  .hero-posters {
+    position: absolute; right: -2rem; top: 0; bottom: 0;
+    width: 55%; display: flex; align-items: center; justify-content: center;
+    perspective: 1000px;
+  }
+  .poster-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 12px; transform: rotateY(-12deg) rotateX(3deg);
+    opacity: 0.6;
+  }
+  .poster-item {
+    width: 100px; height: 150px;
+    border-radius: 8px; overflow: hidden;
+    background: var(--bg3);
+    transition: transform .3s, opacity .3s;
+  }
+  .poster-item:hover { transform: scale(1.05); opacity: 1; }
+  .poster-item .poster-fill {
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; color: var(--muted); text-align: center; padding: 8px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+
+  .hero-content { position: relative; z-index: 2; max-width: 560px; }
+  .hero-tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(230,57,70,0.15); border: 1px solid rgba(230,57,70,0.3);
+    color: var(--accent); font-size: 11px; font-weight: 600;
+    padding: 4px 12px; border-radius: 20px; letter-spacing: 1px;
+    text-transform: uppercase; margin-bottom: 16px;
+  }
+  .hero-tag::before {
+    content: ''; width: 6px; height: 6px;
+    background: var(--accent); border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.4)} }
+  .hero-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(52px, 7vw, 88px);
+    line-height: 0.95; letter-spacing: 2px;
+    margin-bottom: 20px;
+  }
+  .hero-title span { color: var(--accent); }
+  .hero-desc {
+    color: var(--muted); font-size: 15px; line-height: 1.7;
+    margin-bottom: 32px; max-width: 440px;
+  }
+  .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+  .btn-play {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--accent); color: white; border: none;
+    padding: 14px 28px; border-radius: 8px;
+    font-weight: 600; font-size: 15px; cursor: pointer;
+    transition: all .2s;
+  }
+  .btn-play:hover { background: #c1121f; transform: translateY(-2px); }
+  .btn-play svg { width: 18px; height: 18px; fill: white; }
+  .btn-info {
+    display: flex; align-items: center; gap: 8px;
+    background: rgba(255,255,255,0.08); color: var(--text);
+    border: 1px solid var(--border);
+    padding: 14px 28px; border-radius: 8px;
+    font-weight: 500; font-size: 15px; cursor: pointer;
+    transition: all .2s;
+  }
+  .btn-info:hover { background: rgba(255,255,255,0.14); }
+  .hero-meta {
+    display: flex; gap: 20px; margin-top: 24px;
+    font-size: 13px; color: var(--muted);
+  }
+  .hero-meta .rating { color: var(--gold); font-weight: 600; }
+  .hero-meta .badge {
+    background: rgba(255,255,255,0.08);
+    padding: 2px 8px; border-radius: 4px;
+    font-size: 11px; font-weight: 600; letter-spacing: .5px;
+  }
+
+  /* ── SECTIONS ─────────────────────────────────────── */
+  main { padding-top: 64px; }
+  .section { padding: 40px 3rem; }
+  .section-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px; letter-spacing: 2px; color: var(--text);
+  }
+  .section-title span { color: var(--accent); }
+  .see-all {
+    font-size: 12px; color: var(--muted); cursor: pointer;
+    text-decoration: none; display: flex; align-items: center; gap: 4px;
+    transition: color .2s;
+  }
+  .see-all:hover { color: var(--accent); }
+
+  .movie-row {
+    display: flex; gap: 12px; overflow-x: auto;
+    padding-bottom: 12px; scrollbar-width: none;
+  }
+  .movie-row::-webkit-scrollbar { display: none; }
+
+  .movie-card {
+    flex-shrink: 0; width: 180px; cursor: pointer;
+    border-radius: 10px; overflow: hidden;
+    transition: transform .25s, box-shadow .25s;
+    background: var(--card);
+    border: 1px solid var(--border);
+  }
+  .movie-card:hover {
+    transform: scale(1.05) translateY(-4px);
+    box-shadow: 0 20px 60px rgba(0,0,0,.8), 0 0 0 1px rgba(230,57,70,0.3);
+    z-index: 10;
+  }
+  .card-poster {
+    width: 100%; height: 260px;
+    display: flex; align-items: center; justify-content: center;
+    position: relative; overflow: hidden;
+  }
+  .card-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,.9) 0%, transparent 50%);
+    opacity: 0; transition: opacity .25s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .movie-card:hover .card-overlay { opacity: 1; }
+  .play-btn {
+    width: 48px; height: 48px; border-radius: 50%;
+    background: var(--accent); border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: transform .2s;
+  }
+  .play-btn:hover { transform: scale(1.15); }
+  .play-btn svg { fill: white; width: 16px; height: 16px; margin-left: 3px; }
+  .card-body { padding: 10px 12px 14px; }
+  .card-title {
+    font-size: 13px; font-weight: 600; color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    margin-bottom: 4px;
+  }
+  .card-meta {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 11px; color: var(--muted);
+  }
+  .card-rating { color: var(--gold); font-weight: 600; }
+  .card-genre {
+    background: rgba(255,255,255,0.05);
+    padding: 1px 6px; border-radius: 3px;
+    font-size: 10px; color: var(--muted);
+  }
+
+  /* poster placeholder colors */
+  .c1 { background: linear-gradient(135deg, #1a0a2e, #3d1f6e); }
+  .c2 { background: linear-gradient(135deg, #0d1b2a, #1b4332); }
+  .c3 { background: linear-gradient(135deg, #2d0320, #6b1238); }
+  .c4 { background: linear-gradient(135deg, #1c1003, #5c3d11); }
+  .c5 { background: linear-gradient(135deg, #091f2e, #0d3b5c); }
+  .c6 { background: linear-gradient(135deg, #1a0505, #5c0d0d); }
+  .c7 { background: linear-gradient(135deg, #0d1a0d, #1e4a1e); }
+  .c8 { background: linear-gradient(135deg, #1e1a00, #5c5000); }
+
+  .card-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 72px; color: rgba(255,255,255,0.12);
+    line-height: 1; position: absolute; bottom: -8px; right: 8px;
+  }
+
+  /* ── RECOMMENDATION SECTION ─────────────────────── */
+  .rec-header {
+    background: linear-gradient(135deg, rgba(230,57,70,.08), rgba(255,107,53,.06));
+    border: 1px solid rgba(230,57,70,.15);
+    border-radius: 12px; padding: 16px 24px;
+    display: flex; align-items: center; gap: 16px; margin-bottom: 20px;
+  }
+  .rec-icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    background: rgba(230,57,70,.2); border: 1px solid rgba(230,57,70,.3);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .rec-label { font-size: 12px; color: var(--muted); margin-bottom: 2px; }
+  .rec-title { font-size: 15px; font-weight: 600; color: var(--text); }
+  .rec-powered {
+    margin-left: auto; text-align: right;
+    font-size: 10px; color: var(--muted); letter-spacing: .5px;
+  }
+  .tech-badges { display: flex; gap: 6px; margin-top: 4px; }
+  .tech-badge {
+    font-size: 9px; font-weight: 700; letter-spacing: .8px;
+    text-transform: uppercase; padding: 2px 8px; border-radius: 3px;
+  }
+  .tb-neo4j { background: rgba(18,219,140,.15); color: #12db8c; }
+  .tb-kafka  { background: rgba(255,160,50,.15); color: #ffa032; }
+  .tb-redis  { background: rgba(255,70,70,.15);  color: #ff4646; }
+
+  /* ── LOGIN MODAL ──────────────────────────────────── */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 999;
+    background: rgba(0,0,0,.7); backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity .25s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 16px; padding: 40px; width: 400px;
+    transform: translateY(20px); transition: transform .25s;
+  }
+  .modal-overlay.open .modal { transform: translateY(0); }
+  .modal-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 32px; letter-spacing: 2px; color: var(--accent);
+    margin-bottom: 4px;
+  }
+  .modal-sub { font-size: 14px; color: var(--muted); margin-bottom: 32px; }
+  .oauth-btn {
+    width: 100%; padding: 14px; border-radius: 8px; border: 1px solid var(--border);
+    background: rgba(255,255,255,0.04); color: var(--text);
+    font-size: 14px; font-weight: 500; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+    margin-bottom: 12px; transition: background .2s, border-color .2s;
+  }
+  .oauth-btn:hover { background: rgba(255,255,255,0.09); border-color: rgba(255,255,255,.2); }
+  .oauth-btn img { width: 20px; height: 20px; }
+  .modal-divider {
+    display: flex; align-items: center; gap: 12px;
+    margin: 20px 0; color: var(--muted); font-size: 12px;
+  }
+  .modal-divider::before, .modal-divider::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+
+  /* ── FOOTER ──────────────────────────────────────── */
+  footer {
+    padding: 40px 3rem 60px;
+    border-top: 1px solid var(--border);
+    display: flex; align-items: center; gap: 20px;
+  }
+  .footer-logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px; letter-spacing: 3px; color: var(--accent);
+  }
+  .footer-text { font-size: 12px; color: var(--muted); }
+  .footer-stack { display: flex; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+  .stack-badge {
+    font-size: 10px; font-weight: 700; letter-spacing: .6px;
+    padding: 3px 10px; border-radius: 4px; border: 1px solid var(--border);
+    color: var(--muted);
+  }
+</style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav>
+  <div class="logo">CineMax</div>
+  <div class="nav-links">
+    <a class="active">Trang chủ</a>
+    <a>Phim bộ</a>
+    <a>Phim lẻ</a>
+    <a>Thể loại</a>
+    <a>Mới nhất</a>
+  </div>
+  <div class="nav-right">
+    <div class="search-bar">
+      <svg width="14" height="14" fill="none" stroke="#7a7890" stroke-width="2" viewBox="0 0 24 24">
+        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+      </svg>
+      <input type="text" placeholder="Tìm kiếm phim...">
+    </div>
+    <button class="btn-login" onclick="openModal()">Đăng nhập</button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-grid"></div>
+
+  <div class="hero-posters">
+    <div class="poster-grid" id="posterGrid"></div>
+  </div>
+
+  <div class="hero-content">
+    <div class="hero-tag">Đề xuất hôm nay</div>
+    <h1 class="hero-title">DUNE<br><span>PART TWO</span></h1>
+    <p class="hero-desc">
+      Paul Atreides thống nhất với người Fremen trả thù những kẻ đã hủy diệt gia đình anh. Đối mặt giữa tình yêu và số mệnh.
+    </p>
+    <div class="hero-actions">
+      <button class="btn-play" onclick="openModal()">
+        <svg viewBox="0 0 24 24"><path d="M5 3l14 9-14 9V3z"/></svg>
+        Xem ngay
+      </button>
+      <button class="btn-info">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>
+        </svg>
+        Thông tin
+      </button>
+    </div>
+    <div class="hero-meta">
+      <span class="rating">★ 8.5</span>
+      <span>2024</span>
+      <span>2g 46p</span>
+      <span class="badge">4K</span>
+      <span class="badge">HDR</span>
+    </div>
+  </div>
+</section>
+
+<!-- MAIN CONTENT -->
+<main>
+
+  <!-- RECOMMENDATION SECTION -->
+  <section class="section">
+    <div class="rec-header">
+      <div class="rec-icon">
+        <svg width="20" height="20" fill="none" stroke="#e63946" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+        </svg>
+      </div>
+      <div>
+        <div class="rec-label">Dành riêng cho bạn</div>
+        <div class="rec-title">Gợi ý dựa trên lịch sử xem</div>
+      </div>
+      <div class="rec-powered">
+        <div style="font-size:10px;color:var(--muted)">Powered by</div>
+        <div class="tech-badges">
+          <span class="tech-badge tb-neo4j">Neo4j</span>
+          <span class="tech-badge tb-kafka">Kafka</span>
+          <span class="tech-badge tb-redis">Redis</span>
+        </div>
+      </div>
+    </div>
+    <div class="movie-row" id="recommendRow"></div>
+  </section>
+
+  <!-- TRENDING -->
+  <section class="section" style="padding-top:0">
+    <div class="section-header">
+      <div class="section-title">🔥 Đang <span>HOT</span></div>
+      <a class="see-all">Xem tất cả →</a>
+    </div>
+    <div class="movie-row" id="trendingRow"></div>
+  </section>
+
+  <!-- TOP 10 -->
+  <section class="section" style="padding-top:0">
+    <div class="section-header">
+      <div class="section-title">Top <span>10</span> Hôm Nay</div>
+      <a class="see-all">Xem tất cả →</a>
+    </div>
+    <div class="movie-row" id="top10Row"></div>
+  </section>
+
+  <!-- CONTINUE WATCHING -->
+  <section class="section" style="padding-top:0">
+    <div class="section-header">
+      <div class="section-title">Xem <span>Tiếp</span></div>
+    </div>
+    <div class="movie-row" id="continueRow"></div>
+  </section>
+
+</main>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">CineMax</div>
+  <div class="footer-text">© 2025 CineMax. Nền tảng phim trực tuyến.</div>
+  <div class="footer-stack">
+    <span class="stack-badge">Spring Boot</span>
+    <span class="stack-badge">Kafka</span>
+    <span class="stack-badge">Neo4j</span>
+    <span class="stack-badge">Redis</span>
+    <span class="stack-badge">PostgreSQL</span>
+    <span class="stack-badge">React</span>
+  </div>
+</footer>
+
+<!-- LOGIN MODAL -->
+<div class="modal-overlay" id="loginModal" onclick="closeModalOutside(event)">
+  <div class="modal">
+    <div class="modal-title">ĐĂNG NHẬP</div>
+    <div class="modal-sub">Đăng nhập để xem phim và nhận gợi ý cá nhân</div>
+
+    <button class="oauth-btn">
+      <svg width="20" height="20" viewBox="0 0 24 24">
+        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+      </svg>
+      Tiếp tục với Google
+    </button>
+
+    <button class="oauth-btn">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
+        <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+      </svg>
+      Tiếp tục với GitHub
+    </button>
+
+    <div class="modal-divider">hoặc</div>
+
+    <div style="font-size:12px;color:var(--muted);text-align:center;line-height:1.6">
+      Chưa có tài khoản? Đăng ký miễn phí.<br>
+      <span style="color:rgba(255,255,255,.3)">JWT · OAuth2 · Spring Security</span>
+    </div>
+
+    <button onclick="closeModal()" style="
+      margin-top:20px; width:100%; padding:10px; border-radius:6px;
+      background:none; border:1px solid var(--border); color:var(--muted);
+      cursor:pointer; font-size:13px; transition:all .2s;
+    " onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">
+      Đóng
+    </button>
+  </div>
+</div>
+
+<script>
+const movies = [
+  { title: "Dune: Part Two", year: 2024, rating: "8.5", genre: "Sci-Fi", color: "c1" },
+  { title: "Oppenheimer", year: 2023, rating: "8.9", genre: "Drama", color: "c2" },
+  { title: "Poor Things", year: 2023, rating: "8.0", genre: "Drama", color: "c3" },
+  { title: "Past Lives", year: 2023, rating: "7.9", genre: "Romance", color: "c4" },
+  { title: "Killers of the Flower Moon", year: 2023, rating: "7.7", genre: "Thriller", color: "c5" },
+  { title: "The Zone of Interest", year: 2023, rating: "7.4", genre: "Drama", color: "c6" },
+  { title: "Godzilla x Kong", year: 2024, rating: "6.3", genre: "Action", color: "c7" },
+  { title: "Civil War", year: 2024, rating: "7.4", genre: "Action", color: "c8" },
+  { title: "Longlegs", year: 2024, rating: "6.1", genre: "Horror", color: "c1" },
+  { title: "Alien: Romulus", year: 2024, rating: "7.3", genre: "Sci-Fi", color: "c2" },
+  { title: "Twisters", year: 2024, rating: "6.5", genre: "Action", color: "c3" },
+  { title: "Inside Out 2", year: 2024, rating: "7.8", genre: "Animation", color: "c4" },
+];
+
+function makeCard(m, idx, showNum = false) {
+  return `
+    <div class="movie-card" onclick="openModal()">
+      <div class="card-poster ${m.color}">
+        ${showNum ? `<span class="card-num">${String(idx+1).padStart(2,'0')}</span>` : ''}
+        <div class="card-overlay">
+          <button class="play-btn"><svg viewBox="0 0 24 24"><path d="M5 3l14 9-14 9V3z"/></svg></button>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-title">${m.title}</div>
+        <div class="card-meta">
+          <span class="card-rating">★ ${m.rating}</span>
+          <span>${m.year}</span>
+          <span class="card-genre">${m.genre}</span>
+        </div>
+      </div>
+    </div>`;
+}
+
+document.getElementById('recommendRow').innerHTML =
+  movies.slice(0,8).map((m,i) => makeCard(m,i)).join('');
+document.getElementById('trendingRow').innerHTML =
+  [...movies].sort(()=>Math.random()-.5).slice(0,8).map((m,i) => makeCard(m,i)).join('');
+document.getElementById('top10Row').innerHTML =
+  movies.slice(0,10).map((m,i) => makeCard(m,i,true)).join('');
+document.getElementById('continueRow').innerHTML =
+  movies.slice(2,7).map((m,i) => makeCard(m,i)).join('');
+
+// Poster grid in hero
+const pg = document.getElementById('posterGrid');
+pg.innerHTML = movies.slice(0,8).map(m => `
+  <div class="poster-item">
+    <div class="poster-fill ${m.color}" style="font-size:10px;color:rgba(255,255,255,.4);text-align:center;padding:12px">
+      ${m.title}
+    </div>
+  </div>`).join('');
+
+function openModal() {
+  document.getElementById('loginModal').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('loginModal').classList.remove('open');
+}
+function closeModalOutside(e) {
+  if (e.target.id === 'loginModal') closeModal();
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+</script>
+</body>
+</html>
