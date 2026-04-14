@@ -1,0 +1,266 @@
+### ============================================================
+###  CINEK — API Test File (IntelliJ HTTP Client / VS Code REST Client)
+###  Base URL: http://localhost:8080
+###  Seed accounts: admin/Admin@123  |  testuser/User@123
+### ============================================================
+
+@base = http://localhost:8080
+@adminToken = <paste_admin_token_here>
+@userToken  = <paste_user_token_here>
+
+### ──────────────────────────────────────────────────────────
+###  1. AUTH
+### ──────────────────────────────────────────────────────────
+
+### 1a. Login as ADMIN (copy token → @adminToken above)
+POST {{base}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "Admin@123"
+}
+
+### 1b. Login as USER (copy token → @userToken above)
+POST {{base}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "testuser",
+  "password": "User@123"
+}
+
+### 1c. Register new account
+POST {{base}}/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "newuser",
+  "email": "newuser@test.com",
+  "password": "NewUser@123",
+  "fullName": "New User"
+}
+
+### 1d. Refresh access token
+POST {{base}}/api/auth/refresh
+Authorization: Bearer {{userToken}}
+
+### 1e. Validate token
+GET {{base}}/api/auth/validate
+Authorization: Bearer {{userToken}}
+
+### 1f. Logout (blacklists both tokens)
+POST {{base}}/api/auth/logout
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+  "refreshToken": "<paste_refresh_token_here>"
+}
+
+
+### ──────────────────────────────────────────────────────────
+###  2. MOVIES (public read, admin write)
+### ──────────────────────────────────────────────────────────
+
+### 2a. List all movies (page 1, size 10)
+GET {{base}}/api/movies?page=1&size=10
+
+### 2b. Search by keyword
+GET {{base}}/api/movies?keyword=inception
+
+### 2c. Filter by genre
+GET {{base}}/api/movies?genre=Sci-Fi
+
+### 2d. Get movie by ID
+GET {{base}}/api/movies/1
+
+### 2e. Trending movies
+GET {{base}}/api/movies/trending?limit=5
+
+### 2f. Create movie (ADMIN only)
+POST {{base}}/api/movies
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "title": "Dune: Part Two",
+  "description": "Paul Atreides dẫn dắt người Fremen chống lại Harkonnen.",
+  "genre": "Sci-Fi",
+  "duration": 166,
+  "releaseYear": 2024,
+  "posterUrl": "https://m.media-amazon.com/images/M/MV5BN2QyZGU4ZDctOWMzMy00NTc5LThlOGQtODhmNDI1NjgwZjc0XkEyXkFqcGdeQXVyMDM2NDM2MQ@@._V1_SX300.jpg",
+  "director": "Denis Villeneuve",
+  "actors": "Timothée Chalamet, Zendaya, Rebecca Ferguson"
+}
+
+### 2g. Update movie (ADMIN only)
+PUT {{base}}/api/movies/1
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "title": "Inception",
+  "description": "Updated description.",
+  "genre": "Sci-Fi",
+  "duration": 148,
+  "releaseYear": 2010,
+  "posterUrl": "https://m.media-amazon.com/images/M/MV5BMjAxMzY3NjcxNF5BMl5BanBnXkFtZTcwNTI5OTM0Mw@@._V1_SX300.jpg",
+  "director": "Christopher Nolan",
+  "actors": "Leonardo DiCaprio, Joseph Gordon-Levitt"
+}
+
+### 2h. Delete movie (ADMIN, soft-delete)
+DELETE {{base}}/api/movies/16
+Authorization: Bearer {{adminToken}}
+
+
+### ──────────────────────────────────────────────────────────
+###  3. WATCH HISTORY & VIDEO STREAMING
+### ──────────────────────────────────────────────────────────
+
+### 3a. Save watch progress (upsert)
+POST {{base}}/api/history
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+  "movieId": 1,
+  "progress": 45
+}
+
+### 3b. Save more progress on another movie
+POST {{base}}/api/history
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+  "movieId": 3,
+  "progress": 72
+}
+
+### 3c. Save progress for 3rd movie
+POST {{base}}/api/history
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+  "movieId": 7,
+  "progress": 30
+}
+
+### 3d. Continue watching list
+GET {{base}}/api/history/continue?page=0&size=10
+Authorization: Bearer {{userToken}}
+
+### 3e. Stream video by movie ID (returns 206 Partial Content)
+GET {{base}}/api/videos/1
+Authorization: Bearer {{userToken}}
+Range: bytes=0-1048575
+
+### 3f. Get video playback info
+GET {{base}}/api/movies/1/playback
+Authorization: Bearer {{userToken}}
+
+
+### ──────────────────────────────────────────────────────────
+###  4. REVIEWS
+### ──────────────────────────────────────────────────────────
+
+### 4a. Add review for movie 1 (as testuser)
+POST {{base}}/api/reviews
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+  "movieId": 1,
+  "rating": 5,
+  "comment": "Xuất sắc! Một trong những bộ phim hay nhất tôi từng xem."
+}
+
+### 4b. Add review for movie 2
+POST {{base}}/api/reviews
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+  "movieId": 2,
+  "rating": 5,
+  "comment": "Heath Ledger đóng Joker quá tuyệt vời!"
+}
+
+### 4c. Add review for movie 7
+POST {{base}}/api/reviews
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+  "movieId": 7,
+  "rating": 4,
+  "comment": "Classic Sci-Fi, ảnh hưởng cả thế hệ."
+}
+
+### 4d. Get reviews of movie 1
+GET {{base}}/api/movies/1/reviews?page=0&size=10
+
+### 4e. Delete review (owner hoặc ADMIN)
+DELETE {{base}}/api/reviews/1
+Authorization: Bearer {{userToken}}
+
+
+### ──────────────────────────────────────────────────────────
+###  5. RECOMMENDATIONS (Neo4j graph)
+### ──────────────────────────────────────────────────────────
+
+### 5a. Get recommendations for testuser (userId=2)
+### Cần xem/review vài phim trước để có collaborative filtering
+GET {{base}}/api/recommendations/2?limit=10
+Authorization: Bearer {{userToken}}
+
+
+### ──────────────────────────────────────────────────────────
+###  6. USER PROFILE
+### ──────────────────────────────────────────────────────────
+
+### 6a. Get own profile
+GET {{base}}/api/users/profile
+Authorization: Bearer {{userToken}}
+
+### 6b. Update profile
+PUT {{base}}/api/users/profile
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+  "fullName": "Test User Updated",
+  "avatarUrl": "https://i.pravatar.cc/150?u=testuser"
+}
+
+### 6c. Change password
+POST {{base}}/api/users/change-password
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+  "oldPassword": "User@123",
+  "newPassword": "NewPass@456",
+  "confirmPassword": "NewPass@456"
+}
+
+### 6d. Check username available
+GET {{base}}/api/users/check-username/admin
+
+### 6e. Check email available
+GET {{base}}/api/users/check-email/admin@cinek.dev
+
+### 6f. Admin: activate user account
+POST {{base}}/api/users/activate/2
+Authorization: Bearer {{adminToken}}
+
+
+### ──────────────────────────────────────────────────────────
+###  7. HEALTH CHECK
+### ──────────────────────────────────────────────────────────
+
+### 7a. Actuator health
+GET {{base}}/actuator/health

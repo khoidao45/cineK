@@ -6,11 +6,13 @@ import com.codek.movieauthservice.entity.Movie;
 import com.codek.movieauthservice.entity.Review;
 import com.codek.movieauthservice.entity.User;
 import com.codek.movieauthservice.exception.DuplicateReviewException;
+import com.codek.movieauthservice.exception.ReviewNotFoundException;
 import com.codek.movieauthservice.mapper.ReviewMapper;
 import com.codek.movieauthservice.repository.ReviewRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +24,7 @@ public class ReviewService {
     private final ReviewMapper reviewMapper;
     private final UserService userService;
     private final MovieService movieService;
+    private final Neo4jSyncService neo4jSyncService;
 
     @Transactional
     public ReviewResponse addReview(Long userId, ReviewRequest request) {
@@ -40,6 +43,7 @@ public class ReviewService {
                 .build();
 
         Review saved = reviewRepository.save(review);
+        neo4jSyncService.mergeRatedRelationship(userId, request.getMovieId(), request.getRating());
         movieService.refreshRatingStats(request.getMovieId());
         return reviewMapper.toResponse(saved);
     }
@@ -49,5 +53,17 @@ public class ReviewService {
         movieService.findMovieEntityById(movieId); // verify movie exists
         return reviewRepository.findByMovieIdOrderByCreatedAtDesc(movieId, pageable)
                 .map(reviewMapper::toResponse);
+    }
+
+    @Transactional
+    public void deleteReview(Long reviewId, Long requesterId, boolean isAdmin) {
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new ReviewNotFoundException("Review not found: " + reviewId));
+        if (!isAdmin && !review.getUser().getId().equals(requesterId)) {
+            throw new AccessDeniedException("You can only delete your own reviews");
+        }
+        Long movieId = review.getMovie().getId();
+        reviewRepository.delete(review);
+        movieService.refreshRatingStats(movieId);
     }
 }

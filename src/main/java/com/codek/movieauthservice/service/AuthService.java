@@ -7,6 +7,7 @@ import com.codek.movieauthservice.entity.User;
 import com.codek.movieauthservice.exception.AuthException;
 import com.codek.movieauthservice.security.CustomUserDetailsService;
 import com.codek.movieauthservice.security.JwtTokenProvider;
+import com.codek.movieauthservice.security.TokenBlacklistService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -24,6 +25,7 @@ public class AuthService {
     private final UserService userService;
     private final EmailService emailService;
     private final JwtTokenProvider jwtTokenProvider;
+    private final TokenBlacklistService tokenBlacklistService;
     private final AuthenticationManager authenticationManager;
 
     // ── Register ──────────────────────────────────────────────────────────────
@@ -108,6 +110,11 @@ public class AuthService {
 
     public AuthResponse refreshToken(String refreshToken) {
         log.info("auth.refresh.attempt");
+
+        // Check blacklist first — catches revoked tokens (logout, rotation)
+        if (tokenBlacklistService.isBlacklisted(refreshToken)) {
+            throw new AuthException("Refresh token has been revoked!");
+        }
         if (!jwtTokenProvider.validateToken(refreshToken)) {
             throw new AuthException("Invalid refresh token!");
         }
@@ -118,11 +125,17 @@ public class AuthService {
         String username = jwtTokenProvider.getUsernameFromToken(refreshToken);
         User user = userService.getUserByUsername(username);
 
-        String newAccessToken = jwtTokenProvider.generateAccessToken(
+        // Rotate: revoke the old refresh token so it can't be reused
+        tokenBlacklistService.blacklist(refreshToken);
+
+        String newAccessToken  = jwtTokenProvider.generateAccessToken(
                 user.getUsername(), user.getRole().toString(), user.getId());
+        String newRefreshToken = jwtTokenProvider.generateRefreshToken(
+                user.getUsername(), user.getId());
 
         return AuthResponse.builder()
                 .token(newAccessToken)
+                .refreshToken(newRefreshToken)
                 .type("Bearer")
                 .userId(user.getId())
                 .username(user.getUsername())

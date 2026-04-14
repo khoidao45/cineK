@@ -55,6 +55,7 @@ export interface TrendingMovieResponse {
 export interface ReviewResponse {
   id: number;
   movieId: number;
+  movieTitle?: string;
   userId: number;
   username: string;
   rating: number;
@@ -64,8 +65,8 @@ export interface ReviewResponse {
 
 export interface WatchHistoryResponse {
   id: number;
-  movieId: number;
-  movieTitle: string;
+  userId: number;
+  movie: MovieResponse;
   progress: number;
   lastWatchedAt: string;
 }
@@ -87,4 +88,6 @@ export interface UserResponse {
   avatarUrl?: string;
   role: Role;
   active: boolean;
+  emailVerified?: boolean;
+  provider?: string;
 }

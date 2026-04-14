@@ -2,20 +2,21 @@ package com.codek.movieauthservice.security;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.time.Duration;
 
 /**
- * In-memory token blacklist for logout invalidation.
+ * Redis-backed token blacklist for logout invalidation.
  *
- * Production upgrade: replace with Redis (SETEX token "" ttlSeconds)
- * so blacklist survives restarts and works across multiple instances.
+ * Each revoked token is stored in Redis as:
+ *   KEY  → "blacklist:<jwt>"
+ *   VALUE → "1"
+ *   TTL  → remaining time until the token expires naturally
  *
- * Map<token, expiryEpochMs> — scheduled cleanup removes expired entries
- * so memory stays bounded even with many logouts.
+ * Redis TTL handles cleanup automatically — no scheduled job needed.
+ * Works correctly across multiple application instances.
  */
 @Service
 @RequiredArgsConstructor
@@ -23,31 +24,23 @@ import java.util.concurrent.ConcurrentHashMap;
 public class TokenBlacklistService {
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final StringRedisTemplate redisTemplate;
 
-    // token -> expiry time in epoch ms
-    private final Map<String, Long> blacklist = new ConcurrentHashMap<>();
+    private static final String PREFIX = "blacklist:";
 
     public void blacklist(String token) {
         try {
             long expiryMs = jwtTokenProvider.getExpirationMs(token);
-            blacklist.put(token, expiryMs);
-            log.debug("Token blacklisted, expires at epoch ms: {}", expiryMs);
+            long ttlSeconds = Math.max((expiryMs - System.currentTimeMillis()) / 1000, 1);
+            redisTemplate.opsForValue().set(PREFIX + token, "1", Duration.ofSeconds(ttlSeconds));
+            log.debug("token.blacklisted ttl={}s", ttlSeconds);
         } catch (Exception e) {
-            // Token already invalid — no need to track
-            log.debug("Skipped blacklisting already-invalid token");
+            // Token already expired or invalid — no need to track
+            log.debug("token.blacklist.skip — already invalid: {}", e.getMessage());
         }
     }
 
     public boolean isBlacklisted(String token) {
-        return blacklist.containsKey(token);
-    }
-
-    /** Remove expired tokens every hour so memory stays bounded. */
-    @Scheduled(fixedDelay = 3_600_000)
-    public void cleanupExpired() {
-        long now = System.currentTimeMillis();
-        int before = blacklist.size();
-        blacklist.entrySet().removeIf(entry -> entry.getValue() < now);
-        log.debug("Blacklist cleanup: removed {} expired tokens", before - blacklist.size());
+        return Boolean.TRUE.equals(redisTemplate.hasKey(PREFIX + token));
     }
 }

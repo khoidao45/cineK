@@ -1,5 +1,6 @@
 package com.codek.movieauthservice.service;
 
+import com.codek.movieauthservice.config.AppProperties;
 import com.codek.movieauthservice.dto.WatchHistoryRequest;
 import com.codek.movieauthservice.dto.WatchHistoryResponse;
 import com.codek.movieauthservice.entity.Movie;
@@ -23,6 +24,8 @@ public class WatchHistoryService {
     private final WatchHistoryMapper watchHistoryMapper;
     private final UserService userService;
     private final MovieService movieService;
+    private final Neo4jSyncService neo4jSyncService;
+    private final AppProperties appProperties;
 
     @Transactional
     public WatchHistoryResponse upsertProgress(Long userId, WatchHistoryRequest request) {
@@ -45,9 +48,15 @@ public class WatchHistoryService {
         }
 
         WatchHistory saved = watchHistoryRepository.save(watchHistory);
+        neo4jSyncService.mergeWatchedRelationship(
+            userId,
+            request.getMovieId(),
+            saved.getProgress(),
+            saved.getLastWatchedAt()
+        );
 
         // Count a view only when this user hasn't watched the same movie in the last 10 minutes.
-        if (previousLastWatchedAt == null || previousLastWatchedAt.isBefore(LocalDateTime.now().minusMinutes(10))) {
+        if (previousLastWatchedAt == null || previousLastWatchedAt.isBefore(LocalDateTime.now().minusMinutes(appProperties.viewDedupMinutes()))) {
             movieService.incrementViews(request.getMovieId());
         }
 

@@ -36,15 +36,19 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
         if (path.equals("/api/auth/login") || path.equals("/api/auth/register")) {
             String ip = request.getRemoteAddr();
-
-            if (!rateLimitService.tryConsume(ip)) {
-                log.warn("Rate limit exceeded for IP: {}", ip);
-                response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
-                response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-                response.getWriter().write("""
-                        {"status":429,"message":"Too many requests. Please try again later.","error":"Rate Limit Exceeded"}
-                        """);
-                return;
+            try {
+                if (!rateLimitService.tryConsume(ip)) {
+                    log.warn("rate-limit.exceeded ip={}", ip);
+                    response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
+                    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                    response.getWriter().write("""
+                            {"status":429,"message":"Too many requests. Please try again later.","error":"Rate Limit Exceeded"}
+                            """);
+                    return;
+                }
+            } catch (Exception e) {
+                // Fail open: if Redis is unavailable, allow the request rather than blocking all logins
+                log.error("rate-limit.redis-error ip={} — allowing request: {}", ip, e.getMessage());
             }
         }
 

@@ -2,31 +2,43 @@ package com.codek.movieauthservice.security;
 
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
-import io.github.bucket4j.Refill;
+import io.github.bucket4j.BucketConfiguration;
+import io.github.bucket4j.distributed.proxy.ProxyManager;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Distributed rate limiting backed by Redis via Bucket4j.
+ * Each IP address gets its own bucket: 5 requests per 15 minutes.
+ *
+ * Keys are prefixed with "rl:" to avoid collisions with other Redis keys.
+ */
 @Service
+@RequiredArgsConstructor
 public class RateLimitService {
 
-    // Mỗi IP có bucket riêng — lưu trong memory (dùng Redis nếu multi-instance)
-    private final ConcurrentHashMap<String, Bucket> buckets = new ConcurrentHashMap<>();
+    private final ProxyManager<byte[]> rateLimitProxyManager;
 
-    private Bucket createLoginBucket() {
-        // 5 request / 15 phút
-        Bandwidth limit = Bandwidth.classic(5, Refill.intervally(5, Duration.ofMinutes(15)));
-        return Bucket.builder().addLimit(limit).build();
-    }
+    private static final BucketConfiguration LOGIN_BUCKET_CONFIG = BucketConfiguration.builder()
+            .addLimit(Bandwidth.builder()
+                    .capacity(5)
+                    .refillIntervally(5, Duration.ofMinutes(15))
+                    .build())
+            .build();
 
     public boolean tryConsume(String ipAddress) {
-        Bucket bucket = buckets.computeIfAbsent(ipAddress, k -> createLoginBucket());
-        return bucket.tryConsume(1);
+        return resolveBucket(ipAddress).tryConsume(1);
     }
 
     public long getAvailableTokens(String ipAddress) {
-        Bucket bucket = buckets.computeIfAbsent(ipAddress, k -> createLoginBucket());
-        return bucket.getAvailableTokens();
+        return resolveBucket(ipAddress).getAvailableTokens();
+    }
+
+    private Bucket resolveBucket(String ipAddress) {
+        byte[] key = ("rl:" + ipAddress).getBytes(StandardCharsets.UTF_8);
+        return rateLimitProxyManager.builder().build(key, () -> LOGIN_BUCKET_CONFIG);
     }
 }

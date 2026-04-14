@@ -13,6 +13,8 @@ export function MovieDetailPage() {
   const movieId = Number(id);
   const { parseError } = useErrorMessage();
   const authed = useAuthStore((s) => s.isAuthed());
+  const currentUserId = useAuthStore((s) => s.userId);
+  const isAdmin = useAuthStore((s) => s.isAdmin());
 
   const [movie, setMovie] = useState<MovieResponse | null>(null);
   const [reviews, setReviews] = useState<ReviewResponse[]>([]);
@@ -34,6 +36,15 @@ export function MovieDetailPage() {
   };
 
   useEffect(() => { void load(); }, [id]);
+
+  const deleteReview = async (reviewId: number) => {
+    try {
+      await api.delete(`/api/reviews/${reviewId}`);
+      await load();
+    } catch (err) {
+      setError(parseError(err));
+    }
+  };
 
   const submitReview = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,9 +106,18 @@ export function MovieDetailPage() {
       <div className="grid cards" style={{marginBottom:"1rem"}}>
         {reviews.map((r) => (
           <article className="card" key={r.id} style={{margin:0}}>
-            <div style={{display:"flex", justifyContent:"space-between", marginBottom:4}}>
+            <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4}}>
               <strong style={{fontSize:13}}>{r.username}</strong>
-              <span style={{color:"var(--gold)", fontSize:13}}>{"★".repeat(r.rating)}{"☆".repeat(5-r.rating)}</span>
+              <div style={{display:"flex", alignItems:"center", gap:8}}>
+                <span style={{color:"var(--gold)", fontSize:13}}>{"★".repeat(r.rating)}{"☆".repeat(5-r.rating)}</span>
+                {(isAdmin || r.userId === currentUserId) && (
+                  <button
+                    onClick={() => deleteReview(r.id)}
+                    style={{background:"none", border:"none", color:"#f66", cursor:"pointer", fontSize:13, padding:"2px 6px"}}
+                    title="Delete review"
+                  >✕</button>
+                )}
+              </div>
             </div>
             <p style={{color:"var(--muted)", fontSize:13}}>{r.comment || "No comment"}</p>
           </article>

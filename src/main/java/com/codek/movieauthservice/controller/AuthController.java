@@ -2,6 +2,7 @@ package com.codek.movieauthservice.controller;
 
 import com.codek.movieauthservice.dto.AuthRequest;
 import com.codek.movieauthservice.dto.AuthResponse;
+import com.codek.movieauthservice.dto.LogoutRequest;
 import com.codek.movieauthservice.dto.RegisterRequest;
 import com.codek.movieauthservice.security.TokenBlacklistService;
 import com.codek.movieauthservice.service.AuthService;
@@ -94,9 +95,13 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<String> logout(@RequestHeader("Authorization") String authHeader) {
-        String token = authHeader.replace("Bearer ", "");
-        tokenBlacklistService.blacklist(token);
+    public ResponseEntity<String> logout(
+            @RequestHeader("Authorization") String authHeader,
+            @RequestBody(required = false) LogoutRequest body) {
+        tokenBlacklistService.blacklist(authHeader.replace("Bearer ", ""));
+        if (body != null && body.refreshToken() != null) {
+            tokenBlacklistService.blacklist(body.refreshToken());
+        }
         return ResponseEntity.ok("Logged out successfully!");
     }
 }

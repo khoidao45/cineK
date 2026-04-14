@@ -22,8 +22,12 @@ export function ContinueWatchingPage() {
       <ErrorNotice message={error} />
       <div className="grid cards">
         {items.map((it) => (
-          <Link className="movie-card" key={it.id} to={`/watch/${it.movieId}`}>
-            <strong>{it.movieTitle}</strong>
+          <Link className="movie-card" key={it.id} to={`/watch/${it.movie.id}`}>
+            {it.movie.posterUrl
+              ? <img src={it.movie.posterUrl} alt={it.movie.title} style={{ width: "100%", borderRadius: 6, marginBottom: 8 }} />
+              : null}
+            <strong>{it.movie.title}</strong>
+            <span>{it.movie.genre} · {it.movie.releaseYear}</span>
             <span>Progress {it.progress}%</span>
           </Link>
         ))}

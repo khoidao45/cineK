@@ -35,4 +35,14 @@ public class ReviewController {
             @RequestParam(defaultValue = "10") int size) {
         return ResponseEntity.ok(reviewService.getMovieReviews(id, PageRequest.of(page, size)));
     }
+
+    @DeleteMapping("/reviews/{reviewId}")
+    public ResponseEntity<Void> deleteReview(
+            @PathVariable Long reviewId,
+            @AuthenticationPrincipal CustomUserDetailsService.CustomUserDetails userDetails) {
+        boolean isAdmin = userDetails.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+        reviewService.deleteReview(reviewId, userDetails.getUserId(), isAdmin);
+        return ResponseEntity.noContent().build();
+    }
 }

@@ -20,6 +20,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final Neo4jSyncService neo4jSyncService;
 
     // ── Registration ─────────────────────────────────────────────────────────
 
@@ -50,7 +51,9 @@ public class UserService {
                 .provider("LOCAL")
                 .build();
 
-        return userRepository.save(user);
+        User savedUser = userRepository.save(user);
+        neo4jSyncService.mergeUserNode(savedUser);
+        return savedUser;
     }
 
     // ── Email verification ────────────────────────────────────────────────────

@@ -1,5 +1,6 @@
 package com.codek.movieauthservice.service;
 
+import com.codek.movieauthservice.config.AppProperties;
 import com.codek.movieauthservice.dto.MovieRequest;
 import com.codek.movieauthservice.dto.MovieResponse;
 import com.codek.movieauthservice.dto.PageResponse;
@@ -35,12 +36,14 @@ public class MovieService {
     private final MovieRepository movieRepository;
     private final ReviewRepository reviewRepository;
     private final MovieMapper movieMapper;
+    private final Neo4jSyncService neo4jSyncService;
+    private final AppProperties appProperties;
 
     @Transactional(readOnly = true)
     @Cacheable(value = "movies", key = "#page + '-' + #size + '-' + (#keyword == null ? '' : #keyword) + '-' + (#genre == null ? '' : #genre)")
     public PageResponse<MovieResponse> getMovies(int page, int size, String keyword, String genre) {
         int sanitizedPage = Math.max(page - 1, 0);
-        int sanitizedSize = Math.min(Math.max(size, 1), 100);
+        int sanitizedSize = Math.min(Math.max(size, 1), appProperties.pageMaxSize());
 
         Page<MovieResponse> moviePage = movieRepository
                 .searchByKeywordAndGenre(keyword, genre, Pageable.ofSize(sanitizedSize).withPage(sanitizedPage))
@@ -63,6 +66,7 @@ public class MovieService {
         validateReleaseYear(request.getReleaseYear());
         Movie movie = movieMapper.toEntity(request);
         Movie savedMovie = movieRepository.save(movie);
+        neo4jSyncService.mergeMovieNode(savedMovie);
         return movieMapper.toResponse(savedMovie);
     }
 
@@ -81,6 +85,7 @@ public class MovieService {
         movie.setThumbnailUrl(request.getThumbnailUrl());
         movie.setVideoUrl(request.getVideoUrl());
         Movie updatedMovie = movieRepository.save(movie);
+        neo4jSyncService.mergeMovieNode(updatedMovie);
         return movieMapper.toResponse(updatedMovie);
     }
 
@@ -91,6 +96,7 @@ public class MovieService {
                 .orElseThrow(() -> new MovieNotFoundException("Không tìm thấy phim với ID: " + id));
         movie.setDeleted(true);
         movieRepository.save(movie);
+        neo4jSyncService.markMovieDeleted(id);
     }
 
     /**
@@ -101,8 +107,8 @@ public class MovieService {
     @Transactional(readOnly = true)
     @Cacheable(value = "trendingMovies", key = "#limit")
     public List<TrendingMovieResponse> getTrendingMovies(int limit) {
-        int safeLimit = Math.min(Math.max(limit, 1), 50);
-        LocalDateTime cutoff = LocalDateTime.now().minusDays(7);
+        int safeLimit = Math.min(Math.max(limit, 1), appProperties.recommendationLimit());
+        LocalDateTime cutoff = LocalDateTime.now().minusDays(appProperties.trendingDays());
 
         List<MovieRecentWatchProjection> recentWatchCounts = movieRepository.findRecentWatchCounts(cutoff);
         Map<Long, Long> recentCountByMovieId = recentWatchCounts.stream()
@@ -144,7 +150,8 @@ public class MovieService {
     public void incrementViews(Long movieId) {
         Movie movie = findMovieEntityById(movieId);
         movie.setViews(movie.getViews() + 1);
-        movieRepository.save(movie);
+        Movie saved = movieRepository.save(movie);
+        neo4jSyncService.mergeMovieNode(saved);
     }
 
     @Transactional

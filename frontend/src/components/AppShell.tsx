@@ -7,8 +7,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { isAuthed, isAdmin, clearSession } = useAuthStore();
 
   const logout = async () => {
+    const { refreshToken } = useAuthStore.getState();
     try {
-      await api.post("/api/auth/logout");
+      await api.post("/api/auth/logout", { refreshToken });
     } catch {
       // Ignore API logout failure and clear local state anyway.
     } finally {
