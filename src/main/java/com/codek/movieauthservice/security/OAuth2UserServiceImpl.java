@@ -56,6 +56,13 @@ public class OAuth2UserServiceImpl extends DefaultOAuth2UserService {
             user.setAvatarUrl(picture);
             dirty = true;
         }
+        // Same email as Google → treat as verified (fixes LOCAL+unverified then "Login with Google")
+        if (Boolean.FALSE.equals(user.getEmailVerified())) {
+            user.setEmailVerified(true);
+            user.setVerificationToken(null);
+            dirty = true;
+            log.info("Marked email verified via Google OAuth for: {}", user.getEmail());
+        }
         if (dirty) {
             userRepository.save(user);
             log.debug("Synced Google profile for: {}", user.getEmail());
