@@ -160,7 +160,9 @@ public class MovieService {
         Movie movie = findMovieEntityById(movieId);
         MovieRatingAggregateProjection aggregate = reviewRepository.aggregateRatingByMovieId(movieId);
         long ratingCount = aggregate != null && aggregate.getRatingCount() != null ? aggregate.getRatingCount() : 0L;
-        double ratingAvg = aggregate != null && aggregate.getRatingAvg() != null ? aggregate.getRatingAvg() : 0D;
+        double ratingAvg = aggregate != null && aggregate.getRatingAvg() != null
+                ? aggregate.getRatingAvg().doubleValue()
+                : 0D;
         movie.setRatingCount(ratingCount);
         movie.setRatingAvg(ratingAvg);
         movieRepository.save(movie);

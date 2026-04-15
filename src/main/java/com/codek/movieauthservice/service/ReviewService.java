@@ -51,7 +51,7 @@ public class ReviewService {
     @Transactional(readOnly = true)
     public Page<ReviewResponse> getMovieReviews(Long movieId, Pageable pageable) {
         movieService.findMovieEntityById(movieId); // verify movie exists
-        return reviewRepository.findByMovieIdOrderByCreatedAtDesc(movieId, pageable)
+        return reviewRepository.findByMovie_IdOrderByCreatedAtDesc(movieId, pageable)
                 .map(reviewMapper::toResponse);
     }
 
